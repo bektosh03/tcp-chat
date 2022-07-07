@@ -77,6 +77,14 @@ func (s *Server) handleConnection(conn net.Conn) {
 				continue
 			}
 			s.joinGroup(&c, ins[1])
+		case "/leave":
+			s.leaveGroup(&c)
+		case "/msg":
+			if len(ins) < 2 {
+				c.message("ERR: /msg command requires at least one argument - message")
+				continue
+			}
+			s.chat(&c, strings.Join(ins[1:], " "))
 		case "/exit":
 			log.Printf("%s left server\n", c.username)
 			return
@@ -120,4 +128,29 @@ func (s *Server) joinGroup(c *Client, groupName string) {
 	c.group = group
 	group.clients = append(group.clients, c)
 	c.message(fmt.Sprintf("Successfully joined group - %s", groupName))
+	group.chat(c, "joined group")
+}
+
+func (s *Server) chat(c *Client, msg string) {
+	if c.group == nil {
+		c.message("ERR: you cannot message until you are in a group")
+		return
+	}
+
+	c.group.chat(c, msg)
+}
+
+func (s *Server) leaveGroup(client *Client) {
+	if client.group == nil {
+		client.message("ERR: you are not in a group")
+		return
+	}
+	for i, c := range client.group.clients {
+		if client.id == c.id {
+			client.group.clients = append(client.group.clients[:i], client.group.clients[i+1:]...)
+			break
+		}
+	}
+	client.group.chat(client, "left group")
+	client.group = nil
 }

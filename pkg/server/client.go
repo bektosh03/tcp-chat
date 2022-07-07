@@ -8,9 +8,11 @@ import (
 	"log"
 	"net"
 	"strings"
+	"github.com/google/uuid"
 )
 
 type Client struct {
+	id       string
 	username string
 	conn     net.Conn
 	group    *Group
@@ -18,6 +20,7 @@ type Client struct {
 
 func NewClient(conn net.Conn) (Client, error) {
 	c := Client{
+		id: uuid.New().String(),
 		username: "",
 		conn:     conn,
 	}
